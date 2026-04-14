@@ -1,6 +1,6 @@
-train: ../train/images
-val: ../valid/images
-test: ../test/images
+train: ../train/dataset/images/train  # 指向訓練集圖片路徑
+val: ../train/dataset/images/val      # 指向驗證集圖片路徑
+test: ../train/dataset/images/test    # (選填) 測試集
 
 nc: 1
 names: ['0']
