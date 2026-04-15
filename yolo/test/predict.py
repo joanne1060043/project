@@ -4,7 +4,11 @@ from ultralytics import YOLO
 model = YOLO('best.pt')
 
 # 設定圖片路徑，這裡假設您有一張圖片 'image.jpg'
-results = model('image.jpg')  # 輸入圖片路徑
+results = model(
+    'image.jpg',
+    conf=0.55,   # 信心閥值 (0~1)
+    iou=0.5     # IoU 閥值 (0~1)
+)
 result = results[0]
 # 顯示結果
 result.show()  # 顯示圖片上的預測結果
