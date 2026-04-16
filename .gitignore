@@ -1,1 +1,4 @@
 .venv/
+Drone-detectionn.v1i.yolov8/test/
+Drone-detectionn.v1i.yolov8/train/
+Drone-detectionn.v1i.yolov8/valid/
