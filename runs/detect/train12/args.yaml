@@ -1,7 +1,7 @@
 task: detect
 mode: train
 model: yolo11n.pt
-data: Drone-detection.v1i.yolov8/Drone-detection.v1i.yolov8/data.yaml
+data: Drone-detectionn.v1i.yolov8/data.yaml
 epochs: 50
 time: null
 patience: 100
@@ -10,10 +10,10 @@ imgsz: 640
 save: true
 save_period: -1
 cache: false
-device: '0'
+device: null
 workers: 8
 project: null
-name: train3
+name: train12
 exist_ok: false
 pretrained: true
 optimizer: auto
@@ -107,4 +107,4 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: botsort.yaml
-save_dir: C:\Users\user\Desktop\python\project\runs\detect\train3
+save_dir: C:\Users\user\Desktop\python\project\runs\detect\train12
