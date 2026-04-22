@@ -4,3 +4,4 @@ Drone-detectionn.v1i.yolov8/train/
 Drone-detectionn.v1i.yolov8/valid/
 yolo/dataset
 *.pt
+model/20260422_rtx5080_640dpi_16batch_140k_v1.pt

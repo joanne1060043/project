@@ -1,9 +1,9 @@
 import cv2
 from ultralytics import YOLO
 
-model = YOLO(r"Drone-detectionn.v1i.yolov8\predict\best.pt")
+model = YOLO(r"model\20260422_rtx5080_640dpi_16batch_140k_v1.pt")
 
-cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
 # 設定攝影機解析度
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
