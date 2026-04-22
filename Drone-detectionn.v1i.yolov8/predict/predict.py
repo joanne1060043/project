@@ -5,7 +5,7 @@ model = YOLO('best.pt')
 
 # 設定圖片路徑，這裡假設您有一張圖片 'image.jpg'
 results = model(
-    'b.jpg',
+    'a.jpg',
     conf=0.55,   # 信心閥值 (0~1)
     iou=0.5     # IoU 閥值 (0~1)
 )
