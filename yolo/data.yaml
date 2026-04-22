@@ -1,7 +1,7 @@
 path: dataset
-train: images/train # 指向訓練集圖片路徑
-val: images/val # 指向驗證集圖片路徑
-test: images/test # (選填) 測試集
+train: train # 指向訓練集圖片路徑
+val: valid # 指向驗證集圖片路徑
+test: test # (選填) 測試集
 
 nc: 1
 names: ["0"]
