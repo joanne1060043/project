@@ -12,10 +12,10 @@ from pathlib import Path
 # 基本設定
 # =========================
 ROOT = Path(__file__).resolve().parent.parent
-DATASET_DIR = ROOT / "dataset"
+DATASET_DIR = ROOT / "assets" / "dataset"
 
 # 建議先只處理 train
-SPLITS = ["test","valid"]
+SPLITS = ["train","test","valid"]
 
 IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".bmp"]
 

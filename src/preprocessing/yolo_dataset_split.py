@@ -10,8 +10,8 @@ from pathlib import Path
 
 # ===== 設定 =====
 
-SOURCE_DIR = "./yolo/img/train"      # 原始資料夾
-OUTPUT_DIR = "./yolo/img/train/dataset"  # 輸出資料夾
+SOURCE_DIR = "./assets/raw"      # 原始資料夾
+OUTPUT_DIR = "./assets/dataset"  # 輸出資料夾
 
 TRAIN_RATIO = 0.7
 VAL_RATIO = 0.2

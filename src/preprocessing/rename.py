@@ -5,7 +5,7 @@
 
 import os
 
-folder_path = "yolo/img/train/labels"  # 你的資料夾路徑
+folder_path = "assets/raw"  # 你的資料夾路徑
 
 files = sorted(os.listdir(folder_path))  # 先排序
 

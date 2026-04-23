@@ -17,8 +17,8 @@ else:
     data = {"id": 0}  # 如果沒有檔案，則從 ID = 0 開始
 
 # 創建資料夾以儲存截圖
-if not os.path.exists('./assets/clip'):
-    os.makedirs('./assets/clip')
+if not os.path.exists('./assets/raw'):
+    os.makedirs('./assets/raw')
 
 # 開啟攝影機
 cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
@@ -46,7 +46,7 @@ while True:
 
     # 當按下 'C' 鍵時，截取並保存影像
     if key == ord('c'):
-        screenshot_name = f"./assets/clip/screenshot_{screenshot_counter}.png"
+        screenshot_name = f"./assets/raw/screenshot_{screenshot_counter}.png"
         cv2.imwrite(screenshot_name, frame)
         print(f"Screenshot saved as {screenshot_name}")
         screenshot_counter += 1  # 增加截圖編號

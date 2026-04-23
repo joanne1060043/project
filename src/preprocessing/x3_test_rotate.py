@@ -11,7 +11,7 @@ from pathlib import Path
 # 路徑設定
 # =========================
 ROOT = Path(__file__).resolve().parent.parent          # yolo/
-DATASET_DIR = ROOT / "dataset"
+DATASET_DIR = ROOT / "assets" / "dataset"
 IMAGE_DIR = DATASET_DIR / "test" / "images"
 LABEL_DIR = DATASET_DIR / "test" / "labels"
 
