@@ -1,10 +1,16 @@
+############################ 
+# 鏡頭測試模型
+# route: ./src/test/cv.py
+# 
+
 import cv2
 from ultralytics import YOLO
 import numpy as np
 
 model = YOLO(r"model\20260423_rtx5080_640dpi_16batch_140k_v3_50_last.pt")
 
-cap = cv2.VideoCapture(2, cv2.CAP_DSHOW)
+# 設定攝像頭
+cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 
 # 設定攝影機解析度
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)

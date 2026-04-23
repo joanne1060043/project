@@ -19,7 +19,7 @@ pip install -r req.txt
 ```
 
 ### 二、訓練
-> 我們使用 YOLO v11.
+> 我們使用 YOLO v12.
 
 中斷訓練：ctrl+c
 恢復訓練：`python train.py --resume --data=data.yaml --epochs=100 --device=0`

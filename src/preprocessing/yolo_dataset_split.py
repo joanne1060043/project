@@ -1,3 +1,8 @@
+############################ 
+# 將圖片分割成三等份：訓練、測試、驗證
+# route: ./src/preprocessing/take_pictures.py
+# 
+
 import os
 import random
 import shutil
