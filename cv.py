@@ -1,9 +1,9 @@
 import cv2
 from ultralytics import YOLO
 
-model = YOLO(r"model\20260422_rtx5080_640dpi_16batch_140k_v1.pt")
+model = YOLO(r"model\20260423_rtx5080_640dpi_16batch_140k_v3_50_last.pt")
 
-cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+cap = cv2.VideoCapture(2, cv2.CAP_DSHOW)
 
 # 設定攝影機解析度
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
@@ -29,7 +29,9 @@ while True:
         print("無法讀取影像")
         break
 
-    results = model(frame, conf=0.5)
+    results = model(
+        frame, conf=0.15
+    )
     r = results[0]
 
     annotated_frame = r.plot()
