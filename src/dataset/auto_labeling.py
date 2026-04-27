@@ -2,9 +2,9 @@ import os
 from ultralytics import YOLO
 
 # 路徑設定
-MODEL_PATH = r"assets\model\20260423_rtx5080_640dpi_16batch_140k_v3_50.pt"
-IMAGE_DIR = "src/dataset/frames"
-LABEL_DIR = "src/dataset/labels"
+MODEL_PATH = r"assets/model/20260423_rtx5080_640dpi_16batch_140k_img+1k_rc_v4.pt"
+IMAGE_DIR = "assets/raw/frames"
+LABEL_DIR = "assets/raw/labels"
 
 # 信心值門檻，越高越保守
 CONF_THRESHOLD = 0.1
@@ -23,6 +23,11 @@ for img_name in image_files:
 
     label_name = os.path.splitext(img_name)[0] + ".txt"
     label_path = os.path.join(LABEL_DIR, label_name)
+
+    # 如果已經有人工標註，就跳過，避免覆蓋
+    if os.path.exists(label_path):
+        print(f"跳過已存在標註：{label_name}")
+        continue
 
     results = model.predict(
         source=img_path,
