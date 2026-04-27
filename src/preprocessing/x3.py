@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATASET_DIR = ROOT / "assets" / "dataset"
 
 # 建議先只處理 train
-SPLITS = ["train","test","valid"]
+SPLITS = ["train"]
 
 IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".bmp"]
 
