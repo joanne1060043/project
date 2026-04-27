@@ -2,3 +2,5 @@
 assets/dataset
 *.pt
 *.zip
+src/dataset/videos/video_002.mp4
+*.mp4
