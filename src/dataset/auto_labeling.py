@@ -7,7 +7,7 @@ IMAGE_DIR = "src/dataset/frames"
 LABEL_DIR = "src/dataset/labels"
 
 # 信心值門檻，越高越保守
-CONF_THRESHOLD = 0.5
+CONF_THRESHOLD = 0.1
 
 os.makedirs(LABEL_DIR, exist_ok=True)
 
@@ -23,11 +23,6 @@ for img_name in image_files:
 
     label_name = os.path.splitext(img_name)[0] + ".txt"
     label_path = os.path.join(LABEL_DIR, label_name)
-
-    # 如果已經有人工標註，就跳過，避免覆蓋
-    if os.path.exists(label_path):
-        print(f"跳過已存在標註：{label_name}")
-        continue
 
     results = model.predict(
         source=img_path,
