@@ -20,7 +20,7 @@ def get_next_video_name():
     return os.path.join(SAVE_DIR, f"video_{next_num:03d}.mp4")
 
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 
 if not cap.isOpened():
     print("無法開啟攝影機")
