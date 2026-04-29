@@ -1,10 +1,10 @@
 import cv2
 import os
 
-VIDEO_DIR = "src/dataset/videos"
-SAVE_DIR = "src/dataset/frames"
+VIDEO_DIR = r"assets\raw\video"
+SAVE_DIR = r"assets\raw\frames"
 
-TARGET_IMAGES = 1000  # 總共大約抓 1000 張
+TARGET_IMAGES = 2000  # 總共大約抓 2000 張
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 

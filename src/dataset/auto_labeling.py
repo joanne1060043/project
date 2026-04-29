@@ -2,7 +2,7 @@ import os
 from ultralytics import YOLO
 
 # 路徑設定
-MODEL_PATH = r"assets/model/20260423_rtx5080_640dpi_16batch_140k_img+1k_rc_v4.pt"
+MODEL_PATH = r"model\20260429_rtx5080_640dpi_16batch_140k_img+1k_rc_200epoch_v6.pt"
 IMAGE_DIR = "assets/raw/frames"
 LABEL_DIR = "assets/raw/labels"
 
