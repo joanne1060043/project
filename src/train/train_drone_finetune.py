@@ -10,7 +10,7 @@ def main():
 
     model.train(
         data="config/data.yaml",
-        epochs=40,
+        epochs=200,
         imgsz=640,
         batch=16,
         lr0=0.001,
