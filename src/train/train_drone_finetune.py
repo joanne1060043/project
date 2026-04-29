@@ -9,8 +9,8 @@ def main():
     model = YOLO(BASE_MODEL)
 
     model.train(
-        data="src/dataset/dataset.yaml",
-        epochs=80,
+        data="config/data.yaml",
+        epochs=40,
         imgsz=640,
         batch=16,
         lr0=0.001,
