@@ -1,8 +1,8 @@
 task: detect
 mode: train
 model: assets/model/20260423_rtx5080_640dpi_16batch_140k_v3_50.pt
-data: config/data.yaml
-epochs: 80
+data: src/dataset/dataset.yaml
+epochs: 40
 time: null
 patience: 100
 batch: 16
@@ -107,4 +107,4 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: botsort.yaml
-save_dir: D:\code\.Project\project\runs\detect\stage1_adapt
+save_dir: /home/waterball/coding/Projects/project/runs/detect/stage1_adapt
