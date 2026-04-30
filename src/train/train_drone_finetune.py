@@ -10,10 +10,10 @@ def main():
 
     model.train(
         data="config/data.yaml",
-        epochs=200,
+        epochs=500,
         imgsz=640,
-        batch=16,
-        lr0=0.001,
+        batch=24,
+        lr0=0.0005,
         freeze=10,
         device=0,
         name="stage1_adapt"
