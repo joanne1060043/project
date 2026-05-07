@@ -1,47 +1,67 @@
-# servo.py
-import time
-from gpiozero import Servo
+from gpiozero import AngularServo
 from gpiozero.pins.lgpio import LGPIOFactory
 
+
 class TiltServoController:
-    def __init__(self, pin=12):
+    """Servo controller for vertical tilt."""
+
+    def __init__(
+        self,
+        pin=12,
+        zero_offset=90,
+        min_angle=0,
+        max_angle=180,
+        min_pulse_width=0.5 / 1000,
+        max_pulse_width=2.5 / 1000,
+    ):
+        self.factory = None
+        self.servo = None
+        self.zero_offset = zero_offset
+        self.min_angle = min_angle
+        self.max_angle = max_angle
+        self.current_relative_angle = 0.0
+
         try:
             self.factory = LGPIOFactory()
-            # 設定 MG996R 脈衝寬度 (0.5ms ~ 2.5ms) 以獲得最大 180 度轉角
-            self.servo = Servo(
-                pin, 
+            self.servo = AngularServo(
+                pin,
+                initial_angle=zero_offset,
+                min_angle=min_angle,
+                max_angle=max_angle,
+                min_pulse_width=min_pulse_width,
+                max_pulse_width=max_pulse_width,
                 pin_factory=self.factory,
-                min_pulse_width=0.5/1000, 
-                max_pulse_width=2.5/1000
             )
-            print(f"[系統訊息] 舵機 (GPIO {pin}) 初始化成功")
-        except Exception as e:
-            print(f"[錯誤] 舵機初始化失敗: {e}")
+            print(f"[Servo] initialized on GPIO {pin}, zero offset {zero_offset}")
+        except Exception as exc:
+            print(f"[Servo] initialization failed: {exc}")
+
+    def set_relative_angle(self, relative_angle):
+        if self.servo is None:
+            return
+
+        try:
+            physical_angle = max(
+                self.min_angle,
+                min(self.max_angle, self.zero_offset + relative_angle),
+            )
+            self.current_relative_angle = physical_angle - self.zero_offset
+            self.servo.angle = physical_angle
+        except Exception as exc:
+            print(f"[Servo] set angle failed: {exc}")
+
+    def adjust_relative_angle(self, delta):
+        self.set_relative_angle(self.current_relative_angle + delta)
 
     def set_position(self, pos):
-        """
-        設定舵機位置
-        pos 範圍: -1.0 (最小), 0.0 (中間), 1.0 (最大)
-        """
-        try:
-            # 限制輸入值範圍，避免程式報錯
-            pos = max(-1.0, min(1.0, pos))
-            self.servo.value = pos
-        except Exception as e:
-            print(f"[錯誤] 舵機動作執行失敗: {e}")
+        # Keep compatibility with earlier -1.0~1.0 API.
+        pos = max(-1.0, min(1.0, pos))
+        self.set_relative_angle(pos * 90.0)
 
     def stop(self):
-        """
-        停止舵機受力 (按下 S 鍵或程式停止時呼叫)
-        將值設為 None 會停止發送 PWM 訊號，保護舵機不發燙
-        """
-        if hasattr(self, 'servo'):
-            self.servo.value = None
-            print("[系統訊息] 舵機已停止供電 (放鬆狀態)")
+        if self.servo is not None:
+            self.servo.angle = None
 
     def close(self):
-        """
-        釋放硬體資源
-        """
         self.stop()
-        print("[系統訊息] 舵機硬體資源已釋放")
+        print("[Servo] closed")

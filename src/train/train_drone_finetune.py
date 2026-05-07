@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 
 def main():
-    BASE_MODEL = "assets/model/20260423_rtx5080_640dpi_16batch_140k_v3_50.pt"
+    BASE_MODEL = r"model\20260429_rtx5080_640dpi_24batch_140k_img+2k_rc_500epoch_v7.pt"
 
     # =========================
     # 第一階段：適應攝像頭
