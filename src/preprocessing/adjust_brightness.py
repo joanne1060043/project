@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
-input_path = r"assets\raw\video\video_001.mp4"
-output_path = r"assets\raw\video\output_clear_001.mp4"
+input_path = "assets/raw/video/video_001.mp4"
+output_path = "assets/raw/video/output_clear_001.mp4"
 
 cap = cv2.VideoCapture(input_path)
 
