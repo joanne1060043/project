@@ -5,52 +5,54 @@
 
 import cv2
 from ultralytics import YOLO
-import numpy as np
+from pathlib import Path
 
 # 模型路徑
 model = YOLO(r"assets/model/20260423_rtx5080_640dpi_16batch_140k_img+1k_rc_v4.pt")
 
-# 設定攝像頭
-cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+ROOT_DIR = Path(__file__).resolve().parents[2]
 
-# 設定攝影機解析度
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+MODEL_PATH = ROOT_DIR / "model" / "20260429_rtx5080_640dpi_24batch_140k_img+2k_rc_500epoch_v7.pt"
 
-# 建立可縮放視窗
+model = YOLO(str(MODEL_PATH))
+
+# Linux / Raspberry Pi 用 V4L2，不要用 CAP_DSHOW
+cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+
+if not cap.isOpened():
+    raise RuntimeError("無法開啟攝影機，請確認 USB 攝影機是否為 /dev/video0")
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
 cv2.namedWindow("YOLO Camera", cv2.WINDOW_NORMAL)
+cv2.resizeWindow("YOLO Camera", 1280, 720)
 
-# 最大化視窗
-cv2.setWindowProperty(
-    "YOLO Camera",
-    cv2.WND_PROP_FULLSCREEN,
-    cv2.WINDOW_NORMAL
-)
+try:
+    while True:
+        ret, frame = cap.read()
 
-# 設定初始大小（可調整）
-cv2.resizeWindow("YOLO Camera", 1600, 900)
+        if not ret:
+            print("無法讀取影像")
+            break
 
-while True:
-    ret, frame = cap.read()
-    
-    # ===== 3️⃣ 軟體防過曝（壓亮度）=====
-    frame = cv2.convertScaleAbs(frame, alpha=0.8, beta=-25)
+        # 軟體防過曝
+        frame = cv2.convertScaleAbs(frame, alpha=0.8, beta=-25)
 
-    if not ret:
-        print("無法讀取影像")
-        break
+        results = model(
+            frame,
+            conf=0.15,
+            imgsz=640,
+            verbose=False
+        )
 
-    results = model(
-        frame, conf=0.15
-    )
-    r = results[0]
+        annotated_frame = results[0].plot()
 
-    annotated_frame = r.plot()
+        cv2.imshow("YOLO Camera", annotated_frame)
 
-    cv2.imshow("YOLO Camera", annotated_frame)
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
 
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+finally:
+    cap.release()
+    cv2.destroyAllWindows()
