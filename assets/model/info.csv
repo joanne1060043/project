@@ -6,4 +6,4 @@ synthetic / real",epochs,GPU type,batch
 20260429_rtx5080_640dpi_16batch_140k_img+1k_rc_200epoch_v6,Yolo26x,20260428,6,640,140k / 1k,200,RTX5080,16
 20260429_rtx5080_640dpi_16batch_140k_img+1k_rc_v5,Yolo26x,20260428,5,640,140k / 1k,40,RTX5080,16
 20260429_rtx5080_640dpi_24batch_140k_img+2k_rc_500epoch_v7,Yolo26x,20260428,7,640,140k / 2k,500,RTX5080,24
-20260429_rtx5080_640dpi_24batch_140k_img+2k_rc+1k_2rc_v8,Yolo26x,20260511,8,960,140k / 2k+1k
+20260511_rtx5080_640dpi_24batch_140k_img+2k_rc+1k_2rc_v8,Yolo26x,20260511,8,960,140k / 2k+1k,100,RTX5080,24
