@@ -1,17 +1,22 @@
+############################ 
+# purpose: 匯出模型預測影片
+# route: src/test/export_predict_video.py
+# 
+
 import cv2
 import torch
 from ultralytics import YOLO
 
 # 載入模型
-model = YOLO(r"assets/model/20260429_rtx5080_640dpi_24batch_140k_img+2k_rc_500epoch_v7.pt")
+model = YOLO(r"runs/detect/stage2_finetune-2/weights/best.pt")
 
 # 嘗試使用 GPU
 device = 0 if torch.cuda.is_available() else "cpu"
 print("使用裝置：", "GPU CUDA" if device == 0 else "CPU")
 
 # 影片路徑
-video_path = "assets/raw/video/video_001.mp4"
-output_path = "assets/raw/video/video_001_predicted_v7.mp4"
+video_path = "assets/raw/video/video_002.mp4"
+output_path = "assets/raw/video/video_002_predicted_v7_finetune.mp4"
 
 cap = cv2.VideoCapture(video_path)
 

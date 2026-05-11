@@ -1,6 +1,6 @@
 ############################ 
-# 預生成旋轉、曝光、昏暗、模糊、雜訊等圖片，生成後將會有 8倍量圖片
-# route: ./src/preprocessing/x3.py
+# purpose: 預生成旋轉、曝光、昏暗、模糊、雜訊等圖片，生成後將會有 8倍量圖片
+# route: src/preprocessing/x3.py
 # 
 
 import os
@@ -8,9 +8,7 @@ import cv2
 import random
 from pathlib import Path
 
-# =========================
 # 基本設定
-# =========================
 ROOT = Path(__file__).resolve().parent.parent
 DATASET_DIR = ROOT / "assets" / "dataset"
 

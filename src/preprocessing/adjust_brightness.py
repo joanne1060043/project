@@ -1,3 +1,8 @@
+############################ 
+# purpose: 調高影片區域亮度
+# route: src/dataset/adjust_brightness.py
+# 
+
 import cv2
 import numpy as np
 from tqdm import tqdm

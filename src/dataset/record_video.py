@@ -1,3 +1,8 @@
+############################ 
+# purpose: 錄製影片
+# route: src/dataset/record_video.py
+# 
+
 import cv2
 import os
 import re

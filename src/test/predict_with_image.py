@@ -1,3 +1,8 @@
+############################ 
+# purpose: 用圖片預覽模型成效
+# route: src/test/cv.py
+# 
+
 import cv2
 from ultralytics import YOLO
 

@@ -1,6 +1,6 @@
 ############################ 
-# 重新命名並排序指定資料夾的圖片
-# route: ./src/preprocessing/rename.py
+# purpose: 重新命名並排序指定資料夾的圖片
+# route: src/preprocessing/rename.py
 # 
 
 import os

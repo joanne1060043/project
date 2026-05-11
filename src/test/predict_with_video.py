@@ -1,3 +1,8 @@
+############################ 
+# purpose: 用影片預覽模型成效
+# route: src/test/video.py
+# 
+
 import cv2
 from ultralytics import YOLO
 

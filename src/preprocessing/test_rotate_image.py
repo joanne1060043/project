@@ -1,6 +1,6 @@
 ############################ 
-# 測試由程式旋轉的圖片對應標籤位置是否有偏移
-# route: ./src/preprocessing/test_rotate.py
+# purpose: 測試由程式旋轉的圖片對應標籤位置是否有偏移
+# route: src/preprocessing/test_rotate.py
 # 
 
 import cv2

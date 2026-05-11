@@ -1,3 +1,8 @@
+############################ 
+# purpose: 將影片分割成圖片
+# route: src/dataset/extract_frames.py
+# 
+
 import cv2
 import os
 

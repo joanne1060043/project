@@ -1,3 +1,8 @@
+############################ 
+# purpose: 用先前模型賦予圖片標籤
+# route: src/dataset/auto_labeling.py
+# 
+
 import os
 from ultralytics import YOLO
 

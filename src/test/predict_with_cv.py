@@ -1,12 +1,13 @@
 ############################ 
-# 鏡頭測試模型
-# route: ./src/test/cv.py
+# purpose: 用鏡頭預覽模型成效
+# route: src/test/cv.py
 # 
 
 import cv2
 from ultralytics import YOLO
 import numpy as np
 
+# 模型路徑
 model = YOLO(r"assets/model/20260423_rtx5080_640dpi_16batch_140k_img+1k_rc_v4.pt")
 
 # 設定攝像頭
