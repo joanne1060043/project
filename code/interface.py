@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import math
 import time
 from datetime import datetime
 from pathlib import Path
@@ -271,15 +272,29 @@ class HardwarePanTiltController:
         self.pan_motor = None
         self.tilt_servo = None
         self.hardware_enabled = False
+        self.last_error = ""
 
         if DCMotorController is not None and TiltServoController is not None:
             try:
                 self.pan_motor = DCMotorController(in1_pin=17, in2_pin=27, default_speed=38)
                 self.tilt_servo = TiltServoController(pin=12, zero_offset=90)
-                self.hardware_enabled = True
-            except Exception:
+                pan_ready = getattr(self.pan_motor, "h", None) is not None
+                tilt_ready = getattr(self.tilt_servo, "servo", None) is not None
+                self.hardware_enabled = pan_ready and tilt_ready
+                if not self.hardware_enabled:
+                    self.last_error = "GPIO motor/servo initialization incomplete"
+                    if self.pan_motor is not None:
+                        self.pan_motor.close()
+                    if self.tilt_servo is not None:
+                        self.tilt_servo.close()
+                    self.pan_motor = None
+                    self.tilt_servo = None
+            except Exception as exc:
+                self.last_error = str(exc)
                 self.pan_motor = None
                 self.tilt_servo = None
+        else:
+            self.last_error = "GPIO motor/servo modules are not available"
 
     def pan_by(self, delta: float) -> None:
         self.pan_angle += delta
@@ -324,6 +339,7 @@ class MainWindow(QMainWindow):
         self.current_detections: list[DetectionResult] = []
         self.pending_detection: DetectionResult | None = None
         self.detection_streak = 0
+        self.last_tracking_command_at = 0.0
         self.current_frame_size: tuple[int, int] | None = None
         self.progress_dragging = False
         self.video_clock_started_at: float | None = None
@@ -349,6 +365,8 @@ class MainWindow(QMainWindow):
         hardware = HardwarePanTiltController(self.config.tilt_limit_deg)
         if hardware.hardware_enabled:
             return hardware
+        if hardware.last_error:
+            print(f"[Controller] falling back to mock control: {hardware.last_error}")
         return MockPanTiltController(self.config.tilt_limit_deg)
 
     # 建立整個主視窗三欄版面：左側模式、中間工作區、右側狀態卡片。
@@ -1175,16 +1193,23 @@ class MainWindow(QMainWindow):
 
     # 啟動自動追蹤流程。
     def _start_auto_tracking(self) -> None:
-        if self.video_source.mode == "mock" and not self.frame_timer.isActive():
+        if self.current_mode == "Mode 2" and self.video_source.mode != "camera":
             self._connect_camera()
+            if self.video_source.mode != "camera":
+                self.auto_tracking_enabled = False
+                self._refresh_indicators()
+                self._set_status("無法啟動追蹤：請先連接攝影機")
+                return
+
         self._clear_video_clock()
+        self.last_tracking_command_at = 0.0
         self.pipeline_running = True
         self.detection_enabled = True
         self.auto_tracking_enabled = True
         self._refresh_indicators()
         self._refresh_play_pause_button()
         self._ensure_timer()
-        self._set_status("開始執行自動追蹤")
+        self._set_status("開始執行自動追蹤，偵測到無人機後會自動置中")
 
     # 停止播放並回到初始畫面。
     def _stop_pipeline(self) -> None:
@@ -1426,24 +1451,47 @@ class MainWindow(QMainWindow):
 
     # 用主目標中心點與畫面中心的偏差，驅動雲台自動追蹤。
     def _apply_auto_tracking(self, frame_shape: tuple[int, int, int], detection: DetectionResult) -> None:
+        now = time.monotonic()
+        if now - self.last_tracking_command_at < self.config.tracking_command_interval_s:
+            return
+
         frame_h, frame_w = frame_shape[:2]
         cx, cy = detection.center
         error_x = (cx - frame_w / 2.0) / (frame_w / 2.0)
         error_y = (cy - frame_h / 2.0) / (frame_h / 2.0)
+        delta_pan = 0.0
+        delta_tilt = 0.0
 
         if abs(error_x) > self.config.pan_deadband:
-            delta_pan = max(-self.config.pan_step_deg, min(self.config.pan_step_deg, error_x * 12.0))
-            self.controller.pan_by(delta_pan)
+            pan_magnitude = min(
+                self.config.pan_step_deg,
+                max(self.config.pan_min_step_deg, abs(error_x) * self.config.pan_tracking_gain),
+            )
+            delta_pan = math.copysign(pan_magnitude, error_x) * self.config.pan_tracking_direction
 
         if abs(error_y) > self.config.tilt_deadband:
-            delta_tilt = max(-self.config.tilt_step_deg, min(self.config.tilt_step_deg, error_y * 10.0))
+            tilt_magnitude = min(
+                self.config.tilt_step_deg,
+                max(self.config.tilt_min_step_deg, abs(error_y) * self.config.tilt_tracking_gain),
+            )
+            delta_tilt = math.copysign(tilt_magnitude, error_y) * self.config.tilt_tracking_direction
+
+        if delta_pan == 0.0 and delta_tilt == 0.0:
+            return
+
+        if delta_pan != 0.0:
+            self.controller.pan_by(delta_pan)
+        if delta_tilt != 0.0:
             self.controller.tilt_by(delta_tilt)
+        self.last_tracking_command_at = time.monotonic()
 
         self._log_event(
             "auto_tracking",
             {
                 "error_x": round(error_x, 3),
                 "error_y": round(error_y, 3),
+                "delta_pan": round(delta_pan, 2),
+                "delta_tilt": round(delta_tilt, 2),
                 "pan_angle": round(self.controller.pan_angle, 2),
                 "tilt_angle": round(self.controller.tilt_angle, 2),
             },

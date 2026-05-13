@@ -14,11 +14,15 @@ PREFERRED_MODEL_NAME = "20260511_rtx5080_640dpi_24batch_140k_img+2k_rc+1k_2rc_v8
 
 # 先找指定模型，再退回最新權重，最後才使用備援模型名稱。
 def resolve_default_model_path() -> str:
-    model_dir = PROJECT_ROOT / "model"
-    if model_dir.exists():
+    model_dirs = (PROJECT_ROOT / "assets" / "model", PROJECT_ROOT / "model")
+    for model_dir in model_dirs:
+        if not model_dir.exists():
+            continue
+
         preferred_model = model_dir / PREFERRED_MODEL_NAME
         if preferred_model.exists():
             return str(preferred_model)
+
         model_candidates = sorted(model_dir.glob("*.pt"), key=lambda path: path.stat().st_mtime, reverse=True)
         if model_candidates:
             return str(model_candidates[0])
@@ -58,6 +62,13 @@ class AppConfig:
     tilt_deadband: float = 0.08
     pan_step_deg: float = 6.0
     tilt_step_deg: float = 4.0
+    pan_min_step_deg: float = 3.0
+    tilt_min_step_deg: float = 0.8
+    pan_tracking_gain: float = 12.0
+    tilt_tracking_gain: float = 10.0
+    pan_tracking_direction: float = 1.0
+    tilt_tracking_direction: float = 1.0
+    tracking_command_interval_s: float = 0.16
     tilt_limit_deg: float = 55.0
     update_interval_ms: int = 33
 
