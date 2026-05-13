@@ -382,7 +382,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(22) # 元件與元件之間的間隔
         layout.addWidget(self._build_mode_panel(), alignment=Qt.AlignmentFlag.AlignTop)
         layout.addWidget(self._build_center_stack(), stretch=1)
-        layout.addWidget(self._build_status_column(), alignment=Qt.AlignmentFlag.AlignTop)
+        layout.addWidget(self._build_status_column())
         self.setCentralWidget(container)
 
     # 左側模式切換區，只放模式開關本體。
@@ -417,22 +417,29 @@ class MainWindow(QMainWindow):
     def _build_status_column(self) -> QWidget:
         wrapper = QWidget()
         wrapper.setFixedWidth(300)
+        wrapper.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
 
         layout = QVBoxLayout(wrapper)
-        layout.setContentsMargins(0, 168, 0, 0)
-        layout.setSpacing(0)
+        layout.setContentsMargins(0, 70, 0, 0)
+        layout.setSpacing(20)
+        layout.addWidget(self._build_export_button(), alignment=Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(self._build_status_panel())
-        layout.addStretch()
+        layout.addStretch(1)
+        self.angle_info_panel = self._build_angle_info_panel()
+        layout.addWidget(self.angle_info_panel, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self.manual_control_group = self._build_manual_control_group()
+        layout.addWidget(self.manual_control_group, alignment=Qt.AlignmentFlag.AlignHCenter)
+        layout.addSpacing(42)
         return wrapper
 
-    # Mode 1：影片檔案路徑、載入按鈕、預覽與播放控制。
+    # Mode 1：影片檔案路徑、選擇按鈕、預覽與播放控制。
     def _build_mode1_page(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(14)
 
-        title = QLabel("Video Path")
+        title = QLabel("影片路徑")
         title.setStyleSheet(self._title_style())
 
         row = QHBoxLayout()
@@ -445,23 +452,15 @@ class MainWindow(QMainWindow):
         self.mode1_path_input.setStyleSheet(self._path_input_style())
         self._apply_shadow(self.mode1_path_input, blur=18, dy=3, color=QColor(72, 89, 110, 55))
 
-        browse_button = QPushButton("Select Video")
+        browse_button = QPushButton("選擇檔案")
         browse_button.setFixedHeight(42)
         browse_button.setStyleSheet(self._secondary_button_style())
         browse_button.clicked.connect(self._choose_video)
         self._apply_shadow(browse_button, blur=18, dy=3, color=QColor(29, 84, 145, 55))
         self._fit_button_width(browse_button, extra_padding=40, min_width=150)
 
-        open_button = QPushButton("Load the video")
-        open_button.setFixedHeight(42)
-        open_button.setStyleSheet(self._secondary_button_style())
-        open_button.clicked.connect(self._open_video_from_input)
-        self._apply_shadow(open_button, blur=18, dy=3, color=QColor(29, 84, 145, 55))
-        self._fit_button_width(open_button, extra_padding=40, min_width=150)
-
         row.addWidget(self.mode1_path_input, stretch=1)
         row.addWidget(browse_button)
-        row.addWidget(open_button)
 
         layout.addWidget(title)
         layout.addLayout(row)
@@ -509,7 +508,6 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(title)
         layout.addLayout(tool_row)
-        layout.addWidget(self._build_manual_control_group())
         layout.addWidget(self._build_preview_panel(), stretch=1)
         return page
 
@@ -519,19 +517,16 @@ class MainWindow(QMainWindow):
         box.setStyleSheet(self._soft_panel_style("#c9dffd", "#f7fbff"))
         self._apply_shadow(box, blur=24, dy=6, color=QColor(73, 94, 120, 45))
 
-        layout = QHBoxLayout(box)
-        layout.setContentsMargins(18, 14, 18, 14)
-        layout.setSpacing(24)
-
-        title = QLabel("手動控制")
-        title.setStyleSheet("font-size: 22px; font-weight: 700; color: #284266;")
+        layout = QVBoxLayout(box)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(0)
 
         grid = QGridLayout()
         grid.setHorizontalSpacing(10)
         grid.setVerticalSpacing(10)
 
-        up_button = self._make_control_button("上", lambda: self._manual_tilt(-self.config.tilt_step_deg))
-        down_button = self._make_control_button("下", lambda: self._manual_tilt(self.config.tilt_step_deg))
+        up_button = self._make_control_button("上", lambda: self._manual_tilt(self.config.tilt_step_deg))
+        down_button = self._make_control_button("下", lambda: self._manual_tilt(-self.config.tilt_step_deg))
         left_button = self._make_control_button("左", lambda: self._manual_pan(-self.config.pan_step_deg))
         right_button = self._make_control_button("右", lambda: self._manual_pan(self.config.pan_step_deg))
         center_button = self._make_control_button("置中", self._reset_pan_tilt)
@@ -542,20 +537,36 @@ class MainWindow(QMainWindow):
         grid.addWidget(right_button, 1, 2)
         grid.addWidget(down_button, 2, 1)
 
-        info_layout = QVBoxLayout()
+        layout.addLayout(grid)
+        return box
+
+    # 右下角手動控制上方的角度資訊。
+    def _build_angle_info_panel(self) -> QWidget:
+        panel = QWidget()
+        panel.setFixedWidth(286)
+
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+
         self.pan_label = QLabel()
         self.tilt_label = QLabel()
-        self.backend_label = QLabel()
-        self.target_label = QLabel()
-        for label in (self.pan_label, self.tilt_label, self.backend_label, self.target_label):
-            label.setStyleSheet("font-size: 18px; color: #45617f;")
-            info_layout.addWidget(label)
+        for label in (self.pan_label, self.tilt_label):
+            label.setFixedHeight(32)
+            label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+            label.setStyleSheet(
+                "QLabel {"
+                "background: rgba(255, 255, 255, 0.68);"
+                "border: 1px solid #cfe0f6;"
+                "border-radius: 3px;"
+                "padding: 2px 8px;"
+                "font-size: 18px;"
+                "color: #66788f;"
+                "}"
+            )
+            layout.addWidget(label)
 
-        layout.addWidget(title)
-        layout.addLayout(grid)
-        layout.addLayout(info_layout)
-        layout.addStretch()
-        return box
+        return panel
 
     # 共用的小型藍色控制按鈕。
     def _make_control_button(self, text: str, callback: Callable[[], None]) -> QPushButton:
@@ -675,7 +686,27 @@ class MainWindow(QMainWindow):
         layout.addWidget(preview_shell)
         return panel
 
-    # 右側狀態卡片：燈號、狀態訊息、中心點座標與匯出按鈕。
+    # 右上角匯出按鈕。
+    def _build_export_button(self) -> QPushButton:
+        export_button = QPushButton("Export")
+        export_button.setFixedSize(202, 76)
+        export_button.setStyleSheet(
+            "QPushButton {"
+            "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #ff9a1a, stop:1 #ff7b00);"
+            "border: 1px solid #e87400;"
+            "border-radius: 12px;"
+            "font-size: 24px;"
+            "font-weight: 700;"
+            "color: white;"
+            "padding-bottom: 2px;"
+            "}"
+            "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #ffad36, stop:1 #ff8c14); }"
+        )
+        export_button.clicked.connect(self._export_log)
+        self._apply_shadow(export_button, blur=22, dy=6, color=QColor(255, 136, 0, 85))
+        return export_button
+
+    # 右側狀態卡片：燈號、狀態訊息與中心點座標。
     def _build_status_panel(self) -> QWidget:
         panel = QFrame()
         panel.setFixedWidth(300)
@@ -687,9 +718,9 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(20, 28, 20, 24)
         layout.setSpacing(22)
 
-        camera_row, self.camera_indicator = self._build_indicator_row("Camera connection", "#22c55e")
-        running_row, self.running_indicator = self._build_indicator_row("In action", "#2563eb")
-        detect_row, self.detect_indicator = self._build_indicator_row("Detection", "#ff3b30")
+        camera_row, self.camera_indicator = self._build_indicator_row("攝影機連接", "#22c55e")
+        running_row, self.running_indicator = self._build_indicator_row("執行中", "#2563eb")
+        detect_row, self.detect_indicator = self._build_indicator_row("偵測中", "#ff3b30")
 
         layout.addLayout(camera_row)
         layout.addLayout(running_row)
@@ -709,28 +740,6 @@ class MainWindow(QMainWindow):
         self.center_offset_label.setWordWrap(True)
         self.center_offset_label.setStyleSheet("font-size: 18px; color: #5a6e84;")
         layout.addWidget(self.center_offset_label)
-
-        layout.addSpacing(18)
-
-        export_button = QPushButton("Export")
-        export_button.setFixedSize(202, 76)
-        export_button.setStyleSheet(
-            "QPushButton {"
-            "background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #ff9a1a, stop:1 #ff7b00);"
-            "border: 1px solid #e87400;"
-            "border-radius: 12px;"
-            "font-size: 24px;"
-            "font-weight: 700;"
-            "color: white;"
-            "padding-bottom: 2px;"
-            "}"
-            "QPushButton:hover { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #ffad36, stop:1 #ff8c14); }"
-        )
-        export_button.clicked.connect(self._export_log)
-        self._apply_shadow(export_button, blur=22, dy=6, color=QColor(255, 136, 0, 85))
-
-        layout.addWidget(export_button, alignment=Qt.AlignmentFlag.AlignHCenter)
-        layout.addSpacing(10)
         return panel
 
     # 狀態燈一列的共用組裝方式。
@@ -859,6 +868,10 @@ class MainWindow(QMainWindow):
     # 切換中央堆疊頁內容。
     def _refresh_mode_page(self) -> None:
         self.mode_stack.setCurrentIndex(0 if self.current_mode == "Mode 1" else 1)
+        if hasattr(self, "angle_info_panel"):
+            self.angle_info_panel.setVisible(self.current_mode == "Mode 2")
+        if hasattr(self, "manual_control_group"):
+            self.manual_control_group.setVisible(self.current_mode == "Mode 2")
 
     # 更新右側三顆狀態燈。
     def _refresh_indicators(self) -> None:
@@ -874,12 +887,9 @@ class MainWindow(QMainWindow):
 
     # 刷新右側控制資訊與多目標中心點座標。
     def _refresh_controller_labels(self) -> None:
-        backend = "GPIO 硬體" if getattr(self.controller, "hardware_enabled", False) else "模擬控制"
-        detector = f"{self.detector.backend_name.upper()} 偵測"
-        self.pan_label.setText(f"水平角度: {self.controller.pan_angle:+.1f}°")
-        self.tilt_label.setText(f"垂直角度: {self.controller.tilt_angle:+.1f}°")
-        self.backend_label.setText(f"控制模式: {backend}")
-        self.target_label.setText(f"辨識後端: {detector}")
+        if hasattr(self, "pan_label") and hasattr(self, "tilt_label"):
+            self.pan_label.setText(f"水平角度: {self.controller.pan_angle:+.1f}°")
+            self.tilt_label.setText(f"垂直角度: {self.controller.tilt_angle:+.1f}°")
 
         if self.current_detections:
             point_lines = ["中心點座標:"]
@@ -890,7 +900,7 @@ class MainWindow(QMainWindow):
                 if self.current_frame_size is not None:
                     frame_w, frame_h = self.current_frame_size
                     dx = cx - (frame_w // 2)
-                    dy = cy - (frame_h // 2)
+                    dy = (frame_h // 2) - cy
                     offset_lines.append(f"{index}. dx {dx:+d} px, dy {dy:+d} px")
                 else:
                     offset_lines.append(f"{index}. dx -- px, dy -- px")
@@ -941,7 +951,8 @@ class MainWindow(QMainWindow):
         self._refresh_indicators()
         self._refresh_play_pause_button()
         self._refresh_controller_labels()
-        self._set_status(f"已切換為 {mode}")
+        mode_text = "離線模式" if mode == "Mode 1" else "即時模式"
+        self._set_status(f"已切換為{mode_text}")
 
     # 同步右側狀態文字與底部狀態列訊息。
     def _set_status(self, text: str) -> None:
@@ -965,6 +976,7 @@ class MainWindow(QMainWindow):
         )
         if path:
             self.mode1_path_input.setText(path)
+            self._open_video_from_input()
 
     # 根據輸入框路徑載入影片並啟動 Mode 1。
     def _open_video_from_input(self) -> None:
