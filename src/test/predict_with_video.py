@@ -7,10 +7,10 @@ import cv2
 from ultralytics import YOLO
 
 # 載入模型
-model = YOLO(r"model\20260429_rtx5080_640dpi_24batch_140k_img+2k_rc_500epoch_v7.pt")
+model = YOLO(r"assets\model\20260511_rtx5080_640dpi_24batch_140k_img+2k_rc+1k_2rc_v8.pt")
 
 # 影片路徑
-video_path = r"assets\raw\video\video_001.mp4"
+video_path = r"src\dataset\videos\split_output\video_012.mp4"
 
 cap = cv2.VideoCapture(video_path)
 
