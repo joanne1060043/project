@@ -1,4 +1,4 @@
-# 0513
+﻿# 0513
 from __future__ import annotations
 
 import csv
@@ -474,16 +474,14 @@ class MainWindow(QMainWindow):
         tool_row.setSpacing(14)
 
         connect_button = QPushButton("連接攝影機")
-        detect_button = QPushButton("開始偵測")
         track_button = QPushButton("開始追蹤")
         snapshot_button = QPushButton("擷取畫面")
 
         connect_button.clicked.connect(self._connect_camera)
-        detect_button.clicked.connect(self._start_detection_pipeline)
         track_button.clicked.connect(self._start_auto_tracking)
         snapshot_button.clicked.connect(self._save_snapshot)
 
-        for button in (connect_button, detect_button, track_button, snapshot_button):
+        for button in (connect_button, track_button, snapshot_button):
             button.setFixedHeight(44)
             button.setStyleSheet(self._secondary_button_style())
             tool_row.addWidget(button)
@@ -981,9 +979,15 @@ class MainWindow(QMainWindow):
         self._clear_video_clock()
         if self.video_source.open_camera(1):
             self.camera_connected = True
-            self._set_status("已連接外接攝影機（Camera 1）")
+            self.pipeline_running = True
+            self.detection_enabled = True
+            self.auto_tracking_enabled = False
+            self._set_status("已連接外接攝影機（Camera 1），並自動開始偵測")
         else:
             self.camera_connected = False
+            self.pipeline_running = False
+            self.detection_enabled = False
+            self.auto_tracking_enabled = False
             self._set_status("無法連接外接攝影機（Camera 1）")
         self._refresh_indicators()
         self._ensure_timer()
