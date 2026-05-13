@@ -977,18 +977,20 @@ class MainWindow(QMainWindow):
     # 連接攝影機，失敗時保留模擬畫面作為 fallback。
     def _connect_camera(self) -> None:
         self._clear_video_clock()
-        if self.video_source.open_camera(1):
+        if self.video_source.open_camera():
             self.camera_connected = True
             self.pipeline_running = True
             self.detection_enabled = True
             self.auto_tracking_enabled = False
-            self._set_status("已連接外接攝影機（Camera 1），並自動開始偵測")
+            self._set_status(
+                f"已連接攝影機（Camera {self.video_source.path}, {self.video_source.camera_backend}），並自動開始偵測"
+            )
         else:
             self.camera_connected = False
             self.pipeline_running = False
             self.detection_enabled = False
             self.auto_tracking_enabled = False
-            self._set_status("無法連接外接攝影機（Camera 1）")
+            self._set_status("無法連接攝影機，已嘗試 camera 0 / 1 與可用後端")
         self._refresh_indicators()
         self._ensure_timer()
         self._refresh_play_pause_button()

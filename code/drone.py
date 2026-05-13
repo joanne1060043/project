@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+import platform
 from dataclasses import dataclass
 from pathlib import Path
 import cv2
@@ -167,19 +168,51 @@ class VideoSource:
         self.mode = "mock"
         self.frame_index = 0
         self.path = ""
+        self.camera_backend = "unknown"
+
+    def _camera_candidates(self, preferred_camera_id: int) -> list[tuple[int, int | None, str]]:
+        system = platform.system().lower()
+        camera_ids: list[int] = []
+        for candidate in (preferred_camera_id, 0, 1):
+            if candidate not in camera_ids:
+                camera_ids.append(candidate)
+
+        backends: list[tuple[int | None, str]]
+        if system == "windows":
+            backends = [
+                (cv2.CAP_DSHOW, "DirectShow"),
+                (cv2.CAP_MSMF, "MSMF"),
+                (None, "OpenCV default"),
+            ]
+        elif system == "linux":
+            backends = [
+                (cv2.CAP_V4L2, "V4L2"),
+                (None, "OpenCV default"),
+            ]
+        else:
+            backends = [(None, "OpenCV default")]
+
+        return [(camera_id, backend, backend_name) for camera_id in camera_ids for backend, backend_name in backends]
 
     # 連接攝影機；目前固定偏向外接攝影機的索引與 DSHOW 後端。
-    def open_camera(self, camera_id: int = 1) -> bool:
+    def open_camera(self, camera_id: int = 0) -> bool:
         self.release()
-        cap = cv2.VideoCapture(camera_id, cv2.CAP_DSHOW)
-        if not cap.isOpened():
-            self.mode = "mock"
-            return False
-        self.cap = cap
-        self.mode = "camera"
-        self.path = str(camera_id)
-        self.frame_index = 0
-        return True
+        for candidate_id, backend, backend_name in self._camera_candidates(camera_id):
+            cap = cv2.VideoCapture(candidate_id) if backend is None else cv2.VideoCapture(candidate_id, backend)
+            if not cap.isOpened():
+                cap.release()
+                continue
+
+            self.cap = cap
+            self.mode = "camera"
+            self.path = str(candidate_id)
+            self.frame_index = 0
+            self.camera_backend = backend_name
+            return True
+
+        self.mode = "mock"
+        self.camera_backend = "unavailable"
+        return False
 
     # 開啟本地影片檔，供 Mode 1 播放與辨識。
     def open_video(self, path: str) -> bool:
