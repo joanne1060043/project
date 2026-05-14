@@ -2,8 +2,9 @@ import time
 import lgpio
 
 class DCMotorController:
-    """Bidirectional DC motor controller for pan movement."""
+    """控制水平旋轉的雙向直流馬達控制器。"""
 
+    # 角度與馬達通電時間的校正表，用來把目標旋轉角度換算成運轉秒數。
     DEFAULT_CALIBRATION = [
         (0.0, 0.0),
         (5.0, 0.0370),
@@ -33,7 +34,7 @@ class DCMotorController:
         default_speed=35,
         calibration=None,
     ):
-        # Keep backward compatibility with older single-pin usage.
+        # 保留舊版單腳位用法的相容性；如果有傳入 pin，就當作 in1_pin 使用。
         if pin is not None:
             in1_pin = pin
 
@@ -45,6 +46,7 @@ class DCMotorController:
         self.h = None
 
         try:
+            # 開啟預設 GPIO chip，並將馬達控制腳位設定為輸出模式。
             self.h = lgpio.gpiochip_open(0)
             lgpio.gpio_claim_output(self.h, self.in1_pin)
             if self.in2_pin is not None:
@@ -57,11 +59,13 @@ class DCMotorController:
             print(f"[Motor] initialization failed: {exc}")
 
     def _calculate_run_time(self, angle):
+        # 只計算需要運轉多久；方向會在 rotate() 依照角度正負號判斷。
         angle = abs(float(angle))
         if angle <= 0:
             return 0.0
 
         if angle >= self.calibration[-1][0]:
+            # 超過校正表最大角度時，沿用最後兩個校正點的斜率做線性外推。
             max_angle, max_time = self.calibration[-1]
             prev_angle, prev_time = self.calibration[-2]
             slope = (max_time - prev_time) / (max_angle - prev_angle)
@@ -71,6 +75,7 @@ class DCMotorController:
             low_angle, low_time = self.calibration[index]
             high_angle, high_time = self.calibration[index + 1]
             if low_angle <= angle <= high_angle:
+                # 角度落在兩個校正點之間時，使用線性插值估算運轉時間。
                 ratio = (angle - low_angle) / (high_angle - low_angle)
                 return low_time + ratio * (high_time - low_time)
 
@@ -80,14 +85,17 @@ class DCMotorController:
         if self.h is None:
             return
 
+        # 將速度限制在 PWM duty cycle 的合法範圍 0~100。
         duty_cycle = max(0, min(100, speed if speed is not None else self.default_speed))
 
         try:
             if self.in2_pin is None:
+                # 單腳位模式只輸出 PWM，適合舊版接線或單向控制。
                 lgpio.tx_pwm(self.h, self.in1_pin, self.frequency, duty_cycle)
                 return
 
             if direction >= 0:
+                # 雙腳位模式透過 IN1/IN2 一邊輸出 PWM、一邊歸零來切換方向。
                 lgpio.tx_pwm(self.h, self.in1_pin, self.frequency, duty_cycle)
                 lgpio.tx_pwm(self.h, self.in2_pin, self.frequency, 0)
             else:
@@ -101,6 +109,7 @@ class DCMotorController:
             return
 
         try:
+            # 將 PWM duty cycle 歸零即可停止馬達輸出。
             lgpio.tx_pwm(self.h, self.in1_pin, self.frequency, 0)
             if self.in2_pin is not None:
                 lgpio.tx_pwm(self.h, self.in2_pin, self.frequency, 0)
@@ -112,24 +121,28 @@ class DCMotorController:
         if run_time <= 0:
             return
 
+        # 依角度正負決定旋轉方向，通電指定時間後立即停止。
         direction = 1 if angle >= 0 else -1
         self.run(speed=speed, direction=direction)
         time.sleep(run_time)
         self.stop()
 
     def nudge_left(self, angle=5, speed=None):
+        # 小幅向左修正，角度固定轉成負值以符合 rotate() 的方向判斷。
         self.rotate(-abs(angle), speed=speed)
 
     def nudge_right(self, angle=5, speed=None):
+        # 小幅向右修正，角度固定轉成正值以符合 rotate() 的方向判斷。
         self.rotate(abs(angle), speed=speed)
 
     def rotate_30_degrees(self, speed=50, rotate_time=0.1):
-        # Keep compatibility with old tests.
+        # 保留舊測試使用的介面，直接以固定時間驅動馬達。
         self.run(speed=speed, direction=1)
         time.sleep(rotate_time)
         self.stop()
 
     def close(self):
+        # 關閉前先停止馬達，避免釋放 GPIO 後仍有輸出殘留。
         self.stop()
         if self.h is None:
             return
