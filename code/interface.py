@@ -144,7 +144,7 @@ class RockerSwitch(QWidget):
         font.setBold(False)
         painter.setFont(font)
         painter.drawText(QRectF(0, 0, self.width(), 30), Qt.AlignmentFlag.AlignCenter, "離線模式")
-        painter.drawText(QRectF(0, self.height() - 30, self.width(), 30), Qt.AlignmentFlag.AlignCenter, "即時監控")
+        painter.drawText(QRectF(0, self.height() - 30, self.width(), 30), Qt.AlignmentFlag.AlignCenter, "即時模式")
 
 
 # 底部媒體控制按鈕：依 icon_type 畫出播放、暫停、快轉等圖示。
