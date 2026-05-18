@@ -176,6 +176,7 @@ class DetectorEngine:
 class VideoSource:
     def __init__(self) -> None:
         self.cap: cv2.VideoCapture | None = None
+        self.image_frame: np.ndarray | None = None
         self.mode = "mock"
         self.frame_index = 0
         self.path = ""
@@ -238,6 +239,35 @@ class VideoSource:
         self.frame_index = 0
         return True
 
+    # 讀取單張照片，讓 Mode 1 可以用同一套偵測流程處理靜態影像。
+    def open_image(self, path: str) -> bool:
+        self.release()
+        try:
+            data = np.fromfile(path, dtype=np.uint8)
+        except (OSError, ValueError):
+            data = np.array([], dtype=np.uint8)
+
+        frame = cv2.imdecode(data, cv2.IMREAD_COLOR) if data.size else None
+        if frame is None:
+            self.mode = "mock"
+            return False
+
+        self.image_frame = frame
+        self.mode = "image"
+        self.path = path
+        self.frame_index = 0
+        return True
+
+    # 依副檔名選擇影片或照片載入方式；未知格式先嘗試影片，再嘗試照片。
+    def open_media(self, path: str) -> bool:
+        image_exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tif", ".tiff"}
+        suffix = Path(path).suffix.lower()
+        if suffix in image_exts:
+            return self.open_image(path)
+        if self.open_video(path):
+            return True
+        return self.open_image(path)
+
     # 將影片播放位置重設回第一幀。
     def rewind(self) -> None:
         if self.cap is not None and self.mode == "video":
@@ -290,6 +320,9 @@ class VideoSource:
 
     # 讀取影片第一幀，通常用在停止播放後顯示初始畫面。
     def read_first_frame(self) -> np.ndarray | None:
+        if self.mode == "image" and self.image_frame is not None:
+            self.frame_index = 0
+            return self.image_frame.copy()
         if self.cap is None or self.mode != "video":
             return None
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -302,6 +335,10 @@ class VideoSource:
 
     # 讀取下一幀；影片播完時會回到開頭，沒有來源時改用 mock 畫面。
     def read(self) -> tuple[bool, np.ndarray]:
+        if self.mode == "image" and self.image_frame is not None:
+            self.frame_index += 1
+            return True, self.image_frame.copy()
+
         if self.cap is not None:
             ok, frame = self.cap.read()
             if ok:
@@ -341,3 +378,7 @@ class VideoSource:
         if self.cap is not None:
             self.cap.release()
             self.cap = None
+        self.image_frame = None
+        self.mode = "mock"
+        self.path = ""
+        self.frame_index = 0

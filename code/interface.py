@@ -432,21 +432,21 @@ class MainWindow(QMainWindow):
         layout.addSpacing(42)
         return wrapper
 
-    # Mode 1：影片檔案路徑、選擇按鈕、預覽與播放控制。
+    # Mode 1：離線影像檔案路徑、選擇按鈕、預覽與播放控制。
     def _build_mode1_page(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(14)
 
-        title = QLabel("影片路徑")
+        title = QLabel("影片 / 照片路徑")
         title.setStyleSheet(self._title_style())
 
         row = QHBoxLayout()
         row.setSpacing(12)
 
         self.mode1_path_input = QLineEdit()
-        self.mode1_path_input.setPlaceholderText("請輸入影片檔案路徑")
+        self.mode1_path_input.setPlaceholderText("請輸入影片或照片檔案路徑")
         self.mode1_path_input.setText(str(WORKSPACE / "demo.mp4"))
         self.mode1_path_input.setFixedHeight(42)
         self.mode1_path_input.setStyleSheet(self._path_input_style())
@@ -582,7 +582,7 @@ class MainWindow(QMainWindow):
         text_width = button.fontMetrics().horizontalAdvance(button.text())
         button.setMinimumWidth(max(min_width, text_width + extra_padding))
 
-    # Mode 1 影片區：外框、預覽畫面、進度條、底部控制列都在這裡組裝。
+    # Mode 1 離線影像區：外框、預覽畫面、進度條、底部控制列都在這裡組裝。
     def _build_video_panel(self, controls: list[tuple[str, object]]) -> QWidget:
         panel = QFrame()
         panel.setStyleSheet(self._hero_panel_style())
@@ -601,7 +601,7 @@ class MainWindow(QMainWindow):
         preview_layout.setContentsMargins(10, 10, 10, 10)
         preview_layout.setSpacing(0)
 
-        self.preview_label = QLabel("影片預覽")
+        self.preview_label = QLabel("影像預覽")
         self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setMinimumSize(0, 0)
         self.preview_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -966,42 +966,48 @@ class MainWindow(QMainWindow):
         else:
             self._start_detection_pipeline()
 
-    # 開啟檔案選擇器，讓使用者挑影片。
+    # 開啟檔案選擇器，讓使用者挑影片或照片。
     def _choose_video(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
             self,
-            "選擇影片檔",
+            "選擇影片或照片檔",
             str(WORKSPACE),
-            "Video Files (*.mp4 *.avi *.mov *.mkv);;All Files (*)",
+            "Media Files (*.mp4 *.avi *.mov *.mkv *.jpg *.jpeg *.png *.bmp *.webp *.tif *.tiff);;"
+            "Video Files (*.mp4 *.avi *.mov *.mkv);;"
+            "Image Files (*.jpg *.jpeg *.png *.bmp *.webp *.tif *.tiff);;"
+            "All Files (*)",
         )
         if path:
             self.mode1_path_input.setText(path)
             self._open_video_from_input()
 
-    # 根據輸入框路徑載入影片並啟動 Mode 1。
+    # 根據輸入框路徑載入影片或照片並啟動 Mode 1。
     def _open_video_from_input(self) -> None:
         path = self.mode1_path_input.text().strip()
         if not path:
-            self._set_status("????????")
+            self._set_status("請先選擇影片或照片檔案")
             return
-        if self.video_source.open_video(path):
+        if self.video_source.open_media(path):
             self._resume_video_clock()
             self.camera_connected = True
             self.pipeline_running = True
             self.detection_enabled = True
             self.auto_tracking_enabled = False
             self._refresh_progress_ui()
-            self._set_status(f"{Path(path).name}")
+            media_type = "照片" if self.video_source.mode == "image" else "影片"
+            self._set_status(f"已載入{media_type}: {Path(path).name}")
         else:
             self._clear_video_clock()
             self.camera_connected = False
             self.pipeline_running = False
             self.detection_enabled = False
             self.auto_tracking_enabled = False
+            self.frame_timer.stop()
             self._reset_progress_ui()
-            self._set_status("?????????????????")
+            self._set_status("無法讀取檔案，請確認格式或路徑是否正確")
         self._refresh_indicators()
-        self._ensure_timer()
+        if self.pipeline_running:
+            self._ensure_timer()
         self._refresh_play_pause_button()
 
     # 連接攝影機，失敗時保留模擬畫面作為 fallback。
@@ -1074,7 +1080,7 @@ class MainWindow(QMainWindow):
     def _reset_progress_ui(self) -> None:
         self.progress_slider.setEnabled(self.video_source.mode == "video")
         self.progress_slider.setValue(0)
-        self.progress_time_label.setText("00:00 / 00:00")
+        self.progress_time_label.setText("照片模式" if self.video_source.mode == "image" else "00:00 / 00:00")
 
     # 依目前影片位置刷新進度條與時間字樣。
     def _refresh_progress_ui(self) -> None:
@@ -1186,8 +1192,10 @@ class MainWindow(QMainWindow):
 
     # 啟動一般辨識流程。
     def _start_detection_pipeline(self) -> None:
-        if self.current_mode == "Mode 1" and self.video_source.mode not in {"video", "camera"}:
+        if self.current_mode == "Mode 1" and self.video_source.mode not in {"video", "image"}:
             self._open_video_from_input()
+            if self.video_source.mode not in {"video", "image"}:
+                return
         elif self.current_mode == "Mode 2" and self.video_source.mode == "mock" and not self.frame_timer.isActive():
             self._connect_camera()
 
@@ -1243,9 +1251,14 @@ class MainWindow(QMainWindow):
             if preview is not None:
                 self.current_frame = preview.copy()
                 self._update_preview(preview)
+        elif self.video_source.mode == "image":
+            preview = self.video_source.read_first_frame()
+            if preview is not None:
+                self.current_frame = preview.copy()
+                self._update_preview(preview)
         self._refresh_indicators()
         self._refresh_play_pause_button()
-        self._set_status("??????????")
+        self._set_status("已停止影像辨識")
         self._refresh_progress_ui()
 
     # 單步前進一幀，方便除錯或慢速檢查結果。
@@ -1364,6 +1377,19 @@ class MainWindow(QMainWindow):
         self._refresh_progress_ui()
         self._refresh_indicators()
         self._refresh_controller_labels()
+
+        if self.video_source.mode == "image":
+            self.frame_timer.stop()
+            self.pipeline_running = False
+            self.detection_enabled = False
+            self.auto_tracking_enabled = False
+            detected_count = len(self.current_detections)
+            if detected_count:
+                self._set_status(f"照片偵測完成：偵測到 {detected_count} 個目標")
+            else:
+                self._set_status("照片偵測完成：未偵測到目標")
+            self._refresh_indicators()
+            self._refresh_play_pause_button()
 
     # 多目標時挑出一台主目標，供自動追蹤沿用。
     def _select_primary_detection(self, detections: list[DetectionResult]) -> DetectionResult | None:
