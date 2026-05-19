@@ -1,6 +1,8 @@
 from __future__ import annotations
 import math
 import platform
+import threading
+import time
 from dataclasses import dataclass
 from pathlib import Path
 import cv2
@@ -58,17 +60,17 @@ class AppConfig:
     video_confidence: float = 0.35
     camera_confidence: float = 0.50
     camera_confirmation_frames: int = 1
-    pan_deadband: float = 0.10
-    tilt_deadband: float = 0.08
+    pan_deadband: float = 0.01
+    tilt_deadband: float = 0.12
     pan_step_deg: float = 6.0
-    tilt_step_deg: float = 4.0
+    tilt_step_deg: float = 1.5
     pan_min_step_deg: float = 3.0
-    tilt_min_step_deg: float = 0.8
+    tilt_min_step_deg: float = 0.3
     pan_tracking_gain: float = 12.0
-    tilt_tracking_gain: float = 10.0
+    tilt_tracking_gain: float = 4.0
     pan_tracking_direction: float = 1.0
-    tilt_tracking_direction: float = 1.0
-    tracking_command_interval_s: float = 0.16
+    tilt_tracking_direction: float = -1.0
+    tracking_command_interval_s: float = 0.08
     tilt_limit_deg: float = 55.0
     update_interval_ms: int = 33
 
@@ -181,6 +183,12 @@ class VideoSource:
         self.frame_index = 0
         self.path = ""
         self.camera_backend = "unknown"
+        self._camera_lock = threading.Lock()
+        self._camera_stop_event = threading.Event()
+        self._camera_ready_event = threading.Event()
+        self._camera_thread: threading.Thread | None = None
+        self._latest_camera_frame: np.ndarray | None = None
+        self._latest_camera_index = 0
 
     def _camera_candidates(self, preferred_camera_id: int) -> list[tuple[int, int | None, str]]:
         system = platform.system().lower()
@@ -206,6 +214,50 @@ class VideoSource:
 
         return [(camera_id, backend, backend_name) for camera_id in camera_ids for backend, backend_name in backends]
 
+    def _configure_camera_for_low_latency(self, cap: cv2.VideoCapture) -> None:
+        for prop, value in (
+            (cv2.CAP_PROP_BUFFERSIZE, 1),
+            (cv2.CAP_PROP_FPS, 30),
+        ):
+            try:
+                cap.set(prop, value)
+            except Exception:
+                pass
+
+    def _start_camera_reader(self, cap: cv2.VideoCapture) -> None:
+        with self._camera_lock:
+            self._latest_camera_frame = None
+            self._latest_camera_index = 0
+        self._camera_stop_event.clear()
+        self._camera_ready_event.clear()
+        self._camera_thread = threading.Thread(target=self._camera_reader, args=(cap,), daemon=True)
+        self._camera_thread.start()
+
+    def _stop_camera_reader(self) -> None:
+        thread = self._camera_thread
+        if thread is None:
+            return
+        self._camera_stop_event.set()
+        if thread.is_alive() and thread is not threading.current_thread():
+            thread.join(timeout=1.0)
+        self._camera_thread = None
+        self._camera_ready_event.clear()
+        with self._camera_lock:
+            self._latest_camera_frame = None
+            self._latest_camera_index = 0
+
+    def _camera_reader(self, cap: cv2.VideoCapture) -> None:
+        while not self._camera_stop_event.is_set():
+            ok, frame = cap.read()
+            if not ok:
+                time.sleep(0.01)
+                continue
+
+            with self._camera_lock:
+                self._latest_camera_frame = frame
+                self._latest_camera_index += 1
+            self._camera_ready_event.set()
+
     # 連接攝影機；目前固定偏向外接攝影機的索引與 DSHOW 後端。
     def open_camera(self, camera_id: int = 0) -> bool:
         self.release()
@@ -215,11 +267,14 @@ class VideoSource:
                 cap.release()
                 continue
 
+            self._configure_camera_for_low_latency(cap)
             self.cap = cap
             self.mode = "camera"
             self.path = str(candidate_id)
             self.frame_index = 0
             self.camera_backend = backend_name
+            self._start_camera_reader(cap)
+            self._camera_ready_event.wait(timeout=0.5)
             return True
 
         self.mode = "mock"
@@ -339,6 +394,15 @@ class VideoSource:
             self.frame_index += 1
             return True, self.image_frame.copy()
 
+        if self.mode == "camera":
+            if not self._camera_ready_event.is_set():
+                self._camera_ready_event.wait(timeout=0.2)
+            with self._camera_lock:
+                if self._latest_camera_frame is not None:
+                    self.frame_index = self._latest_camera_index
+                    return True, self._latest_camera_frame.copy()
+            return False, np.empty((0, 0, 3), dtype=np.uint8)
+
         if self.cap is not None:
             ok, frame = self.cap.read()
             if ok:
@@ -375,6 +439,7 @@ class VideoSource:
 
     # 釋放目前的 OpenCV capture 資源。
     def release(self) -> None:
+        self._stop_camera_reader()
         if self.cap is not None:
             self.cap.release()
             self.cap = None
