@@ -492,13 +492,15 @@ class MainWindow(QMainWindow):
 
         connect_button = QPushButton("連接攝影機")
         track_button = QPushButton("開始追蹤")
+        stop_track_button = QPushButton("停止追蹤")
         snapshot_button = QPushButton("擷取畫面")
 
         connect_button.clicked.connect(self._connect_camera)
         track_button.clicked.connect(self._start_auto_tracking)
+        stop_track_button.clicked.connect(self._stop_auto_tracking)
         snapshot_button.clicked.connect(self._save_snapshot)
 
-        for button in (connect_button, track_button, snapshot_button):
+        for button in (connect_button, track_button, stop_track_button, snapshot_button):
             button.setFixedHeight(44)
             button.setStyleSheet(self._secondary_button_style())
             tool_row.addWidget(button)
@@ -1230,6 +1232,18 @@ class MainWindow(QMainWindow):
         self._refresh_play_pause_button()
         self._ensure_timer()
         self._set_status("開始執行自動追蹤，偵測到無人機後會自動置中")
+
+    # 停止自動追蹤，但保留攝影機影像與偵測流程。
+    def _stop_auto_tracking(self) -> None:
+        if not self.auto_tracking_enabled:
+            self._set_status("目前未啟動自動追蹤")
+            return
+
+        self.auto_tracking_enabled = False
+        self.last_tracking_command_at = 0.0
+        self._refresh_indicators()
+        self._refresh_play_pause_button()
+        self._set_status("已停止自動追蹤，影像偵測仍會持續執行")
 
     # 停止播放並回到初始畫面。
     def _stop_pipeline(self) -> None:

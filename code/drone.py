@@ -62,8 +62,8 @@ class AppConfig:
     camera_confirmation_frames: int = 1 #連續辨識成功的幀數
     pan_deadband: float = 0.01 #水平旋轉的死區比例
     tilt_deadband: float = 0.12 #垂直旋轉的死區比例
-    pan_step_deg: float = 6.0 #水平單次轉動的角度
-    tilt_step_deg: float = 1.5 #垂直單次轉動的角度
+    pan_step_deg: float = 5.0 #水平單次轉動的角度
+    tilt_step_deg: float = 1.0 #垂直單次轉動的角度
     pan_min_step_deg: float = 3.0 #轉動的最小角度限制
     tilt_min_step_deg: float = 0.3 #轉動的最小角度限制
     pan_tracking_gain: float = 12.0
