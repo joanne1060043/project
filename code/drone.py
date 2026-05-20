@@ -57,22 +57,22 @@ class DetectionResult:
 class AppConfig:
     model_path: str = resolve_default_model_path()
     target_label: str = "drone"
-    video_confidence: float = 0.35
-    camera_confidence: float = 0.50
-    camera_confirmation_frames: int = 1
-    pan_deadband: float = 0.01
-    tilt_deadband: float = 0.12
-    pan_step_deg: float = 6.0
-    tilt_step_deg: float = 1.5
-    pan_min_step_deg: float = 3.0
-    tilt_min_step_deg: float = 0.3
+    video_confidence: float = 0.35 #信心度
+    camera_confidence: float = 0.50 #信心度
+    camera_confirmation_frames: int = 1 #連續辨識成功的幀數
+    pan_deadband: float = 0.01 #水平旋轉的死區比例
+    tilt_deadband: float = 0.12 #垂直旋轉的死區比例
+    pan_step_deg: float = 6.0 #水平單次轉動的角度
+    tilt_step_deg: float = 1.5 #垂直單次轉動的角度
+    pan_min_step_deg: float = 3.0 #轉動的最小角度限制
+    tilt_min_step_deg: float = 0.3 #轉動的最小角度限制
     pan_tracking_gain: float = 12.0
     tilt_tracking_gain: float = 4.0
     pan_tracking_direction: float = 1.0
     tilt_tracking_direction: float = -1.0
-    tracking_command_interval_s: float = 0.08
-    tilt_limit_deg: float = 55.0
-    update_interval_ms: int = 33
+    tracking_command_interval_s: float = 0.08 #傳送追蹤指令給馬達的間隔時間
+    tilt_limit_deg: float = 55.0 #鏡頭上下垂直轉動的最大仰角限制
+    update_interval_ms: int = 33 #系統主程式的更新週期(毫秒)
 
 
 # YOLO 偵測引擎，負責載入模型並回傳整理好的 DetectionResult。
