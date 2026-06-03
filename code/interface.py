@@ -64,6 +64,10 @@ def format_seconds(total_seconds: float) -> str:
     return f"{minutes:02d}:{seconds:02d}"
 
 
+def clamp_angle(angle: float, limit: float) -> float:
+    return max(-limit, min(limit, angle))
+
+
 # 左側模式切換按鈕：只負責顯示狀態與回傳 Mode 1 / Mode 2。
 class RockerSwitch(QWidget):
     clicked = pyqtSignal(str)
@@ -244,20 +248,21 @@ class MediaButton(QToolButton):
 
 # 軟體模擬版雲台控制器：本機沒有硬體時用來維持相同行為介面。
 class MockPanTiltController:
-    def __init__(self, tilt_limit: float) -> None:
+    def __init__(self, pan_limit: float, tilt_limit: float) -> None:
         self.pan_angle = 0.0
         self.tilt_angle = 0.0
+        self.pan_limit = pan_limit
         self.tilt_limit = tilt_limit
         self.hardware_enabled = False
 
     def pan_by(self, delta: float) -> None:
-        self.pan_angle += delta
+        self.pan_angle = clamp_angle(self.pan_angle + delta, self.pan_limit)
 
     def tilt_by(self, delta: float) -> None:
-        self.tilt_angle = max(-self.tilt_limit, min(self.tilt_limit, self.tilt_angle + delta))
+        self.tilt_angle = clamp_angle(self.tilt_angle + delta, self.tilt_limit)
 
     def set_tilt(self, angle: float) -> None:
-        self.tilt_angle = max(-self.tilt_limit, min(self.tilt_limit, angle))
+        self.tilt_angle = clamp_angle(angle, self.tilt_limit)
 
     def close(self) -> None:
         return
@@ -265,7 +270,8 @@ class MockPanTiltController:
 
 # 硬體版雲台控制器：有接馬達與伺服器時走這個流程。
 class HardwarePanTiltController:
-    def __init__(self, tilt_limit: float) -> None:
+    def __init__(self, pan_limit: float, tilt_limit: float) -> None:
+        self.pan_limit = pan_limit
         self.tilt_limit = tilt_limit
         self.pan_angle = 0.0
         self.tilt_angle = 0.0
@@ -297,15 +303,17 @@ class HardwarePanTiltController:
             self.last_error = "GPIO motor/servo modules are not available"
 
     def pan_by(self, delta: float) -> None:
-        self.pan_angle += delta
-        if self.pan_motor is not None and delta != 0:
-            self.pan_motor.rotate(delta, speed=38)
+        target_angle = clamp_angle(self.pan_angle + delta, self.pan_limit)
+        actual_delta = target_angle - self.pan_angle
+        self.pan_angle = target_angle
+        if self.pan_motor is not None and actual_delta != 0:
+            self.pan_motor.rotate(actual_delta, speed=38)
 
     def tilt_by(self, delta: float) -> None:
         self.set_tilt(self.tilt_angle + delta)
 
     def set_tilt(self, angle: float) -> None:
-        self.tilt_angle = max(-self.tilt_limit, min(self.tilt_limit, angle))
+        self.tilt_angle = clamp_angle(angle, self.tilt_limit)
         if self.tilt_servo is not None:
             self.tilt_servo.set_relative_angle(self.tilt_angle)
 
@@ -362,12 +370,12 @@ class MainWindow(QMainWindow):
 
     # 依硬體可用性選擇真實控制器或模擬控制器。
     def _build_controller(self):
-        hardware = HardwarePanTiltController(self.config.tilt_limit_deg)
+        hardware = HardwarePanTiltController(self.config.pan_limit_deg, self.config.tilt_limit_deg)
         if hardware.hardware_enabled:
             return hardware
         if hardware.last_error:
             print(f"[Controller] falling back to mock control: {hardware.last_error}")
-        return MockPanTiltController(self.config.tilt_limit_deg)
+        return MockPanTiltController(self.config.pan_limit_deg, self.config.tilt_limit_deg)
 
     # 建立整個主視窗三欄版面：左側模式、中間工作區、右側狀態卡片。
     def _build_central_widget(self) -> None:

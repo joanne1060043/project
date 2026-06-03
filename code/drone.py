@@ -71,7 +71,8 @@ class AppConfig:
     pan_tracking_direction: float = 1.0
     tilt_tracking_direction: float = -1.0
     tracking_command_interval_s: float = 0.08 #傳送追蹤指令給馬達的間隔時間
-    tilt_limit_deg: float = 55.0 #鏡頭上下垂直轉動的最大仰角限制
+    pan_limit_deg: float = 360.0
+    tilt_limit_deg: float = 90.0 #鏡頭上下垂直轉動的最大仰角限制
     update_interval_ms: int = 33 #系統主程式的更新週期(毫秒)
 
 
