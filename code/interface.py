@@ -535,8 +535,16 @@ class MainWindow(QMainWindow):
         grid.setHorizontalSpacing(10)
         grid.setVerticalSpacing(10)
 
-        up_button = self._make_control_button("上", lambda: self._manual_tilt(self.config.tilt_step_deg))
-        down_button = self._make_control_button("下", lambda: self._manual_tilt(-self.config.tilt_step_deg))
+        up_button = self._make_control_button(
+            "上",
+            lambda: self._manual_tilt(self.config.tilt_step_deg),
+            auto_repeat=True,
+        )
+        down_button = self._make_control_button(
+            "下",
+            lambda: self._manual_tilt(-self.config.tilt_step_deg),
+            auto_repeat=True,
+        )
         left_button = self._make_control_button("左", lambda: self._manual_pan(-self.config.pan_step_deg))
         right_button = self._make_control_button("右", lambda: self._manual_pan(self.config.pan_step_deg))
         center_button = self._make_control_button("置中", self._reset_pan_tilt)
@@ -579,10 +587,14 @@ class MainWindow(QMainWindow):
         return panel
 
     # 共用的小型藍色控制按鈕。
-    def _make_control_button(self, text: str, callback: Callable[[], None]) -> QPushButton:
+    def _make_control_button(self, text: str, callback: Callable[[], None], auto_repeat: bool = False) -> QPushButton:
         button = QPushButton(text)
         button.setFixedSize(78, 42)
         button.setStyleSheet(self._secondary_button_style())
+        if auto_repeat:
+            button.setAutoRepeat(True)
+            button.setAutoRepeatDelay(250)
+            button.setAutoRepeatInterval(120)
         button.clicked.connect(callback)
         self._apply_shadow(button, blur=14, dy=2, color=QColor(29, 84, 145, 40))
         return button
